@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análise Estatística</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Análise Estatística</h1>
+
+    <form onsubmit="return calcularEExibir();">
+        <label for="dados">Digite os dados brutos separados por vírgula:</label>
+        <input type="text" id="dados" required>
+        
+        <label for="repeticao">Considerar Repetição para os cálculos de Permutação, Arranjo e Combinação?</label>
+        <select id="repeticao" name="repeticao">
+            <option value="nao">Não</option>
+            <option value="sim">Sim</option>
+        </select>
+
+        <button type="submit">Calcular</button>
+    </form>
+
+    <div id="resultados" style="display: none;">
+        <p>Média: <span id="media"></span></p>
+        <p>Moda: <span id="moda"></span></p>
+        <p>Mediana: <span id="mediana"></span></p>
+        <p>Variância: <span id="variancia"></span></p>
+        <p>Desvio Padrão: <span id="desvioPadrao"></span></p>
+        <p>Coeficiente de Variação: <span id="coeficienteVariacao"></span></p>
+        <p>Permutação: <span id="permutacao"></span></p>
+        <p>Arranjo: <span id="arranjo"></span></p>
+        <p>Combinação: <span id="combinacao"></span></p>
+    </div>
+
+    <canvas id="histograma" width="400" height="200"></canvas>
+
+    <script>
+        // Variável global para armazenar o objeto de gráfico
+        var myChart;
+
+        function calcularEExibir() {
+            // Limpar o gráfico existente ao recalcular
+            if (myChart) {
+                myChart.destroy();
+            }
+
+            var dadosBrutos = document.getElementById('dados').value;
+            var dados = dadosBrutos.split(',').map(Number);
+
+            var media = calcularMedia(dados);
+            var moda = calcularModa(dados);
+            var mediana = calcularMediana(dados);
+            var variancia = calcularVariancia(dados);
+            var desvioPadrao = calcularDesvioPadrao(dados);
+            var coeficienteVariacao = calcularCoeficienteVariacao(dados);
+
+            // Adiciona cálculos de Permutação, Arranjo e Combinação
+            var considerarRepeticao = document.getElementById('repeticao').value === 'sim';
+            var permutacao = considerarRepeticao ? calcularPermutacaoComRepeticao(dados.length) : calcularPermutacao(dados.length);
+            var arranjo = considerarRepeticao ? calcularArranjoComRepeticao(dados.length, 2) : calcularArranjo(dados.length, 2);
+            var combinacao = considerarRepeticao ? calcularCombinacaoComRepeticao(dados.length, 2) : calcularCombinacao(dados.length, 2);
+
+            exibirResultados(media, moda, mediana, variancia, desvioPadrao, coeficienteVariacao, permutacao, arranjo, combinacao);
+            gerarHistograma(dados);
+
+            return false; // Evitar o envio do formulário
+        }
+
+        function calcularMedia(dados) {
+            return dados.reduce((a, b) => a + b, 0) / dados.length;
+        }
+
+        function calcularModa(dados) {
+            var contagem = {};
+            dados.forEach(function(valor) {
+                contagem[valor] = (contagem[valor] || 0) + 1;
+            });
+
+            var moda = [];
+            var maxContagem = 0;
+            for (var valor in contagem) {
+                if (contagem[valor] > maxContagem) {
+                    moda = [parseInt(valor)];
+                    maxContagem = contagem[valor];
+                } else if (contagem[valor] === maxContagem) {
+                    moda.push(parseInt(valor));
+                }
+            }
+
+            return moda;
+        }
+
+        function calcularMediana(dados) {
+            var dadosOrdenados = dados.sort(function(a, b) {
+                return a - b;
+            });
+
+            var n = dados.length;
+            if (n % 2 === 0) {
+                return (dadosOrdenados[n / 2 - 1] + dadosOrdenados[n / 2]) / 2;
+            } else {
+                return dadosOrdenados[Math.floor(n / 2)];
+            }
+        }
+
+        function calcularVariancia(dados) {
+            var media = calcularMedia(dados);
+            var n = dados.length;
+            return dados.reduce(function(soma, valor) {
+                return soma + Math.pow(valor - media, 2);
+            }, 0) / n;
+        }
+
+        function calcularDesvioPadrao(dados) {
+            return Math.sqrt(calcularVariancia(dados));
+        }
+
+        function calcularCoeficienteVariacao(dados) {
+            var media = calcularMedia(dados);
+            var desvioPadrao = calcularDesvioPadrao(dados);
+            return (desvioPadrao / media) * 100;
+        }
+
+        // Funções sem repetição
+        function calcularPermutacao(n) {
+            return calcularFatorial(n);
+        }
+
+        function calcularArranjo(n, r) {
+            return calcularFatorial(n) / calcularFatorial(n - r);
+        }
+
+        function calcularCombinacao(n, r) {
+            return calcularFatorial(n) / (calcularFatorial(r) * calcularFatorial(n - r));
+        }
+
+        // Funções com repetição
+        function calcularPermutacaoComRepeticao(n) {
+            return Math.pow(n, n);
+        }
+
+        function calcularArranjoComRepeticao(n, r) {
+            return Math.pow(n, r);
+        }
+
+        function calcularCombinacaoComRepeticao(n, r) {
+            return calcularCombinacao(n + r - 1, r);
+        }
+
+        function calcularFatorial(numero) {
+            if (numero === 0 || numero === 1) {
+                return 1;
+            } else {
+                return numero * calcularFatorial(numero - 1);
+            }
+        }
+
+        function exibirResultados(media, moda, mediana, variancia, desvioPadrao, coeficienteVariacao, permutacao, arranjo, combinacao) {
+            document.getElementById('media').innerText = media.toFixed(2);
+            document.getElementById('moda').innerText = moda.join(', ');
+            document.getElementById('mediana').innerText = mediana.toFixed(2);
+            document.getElementById('variancia').innerText = variancia.toFixed(2);
+            document.getElementById('desvioPadrao').innerText = desvioPadrao.toFixed(2);
+            document.getElementById('coeficienteVariacao').innerText = coeficienteVariacao.toFixed(2) + '%';
+
+            // Exibir a seção de resultados
+            document.getElementById('resultados').style.display = 'block';
+
+            document.getElementById('permutacao').innerText = permutacao.toFixed(2);
+            document.getElementById('arranjo').innerText = arranjo.toFixed(2);
+            document.getElementById('combinacao').innerText = combinacao.toFixed(2);
+        }
+
+        function gerarHistograma(dados) {
+            var ctx = document.getElementById('histograma').getContext('2d');
+            
+            var frequencias = {};
+            dados.forEach(function(valor) {
+                frequencias[valor] = (frequencias[valor] || 0) + 1;
+            });
+
+            var histogramaData = {
+                labels: Object.keys(frequencias).map(Number),
+                datasets: [{
+                    label: 'Histograma de Frequência',
+                    data: Object.values(frequencias),
+                    backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            };
+
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: histogramaData,
+                options: {
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // Exibir o histograma
+            document.getElementById('histograma').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
